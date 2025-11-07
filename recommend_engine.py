@@ -7,7 +7,7 @@ def recommend_assessment(test_query, vectorizer, train_vectors, train_df, top_k=
     ranked_indices = similarities.argsort()[::-1]
     results = []
     for idx in ranked_indices:
-        if similarities[idx] < 0.25:
+        if similarities[idx] < 0.05:
             continue
         train_query = train_df.iloc[idx]["Query"]
         overlap = set(clean_text(test_query).split()) & set(clean_text(train_query).split())
@@ -26,4 +26,15 @@ def recommend_assessment(test_query, vectorizer, train_vectors, train_df, top_k=
         })
         if len(results) >= top_k:
             break
+    if not results:
+        best_idx = similarities.argmax()
+        url = train_df.iloc[best_idx]["Assessment_url"]
+        name = url.split("/")[-2].replace("-", " ").title() if isinstance(url, str) and "/" in url else url
+        results.append({
+            "Query": test_query,
+            "Recommended_Assessment_Name": name,
+            "Recommended_Assessment": url,
+            "Similarity_Score": round(float(similarities[best_idx]), 3),
+            "Explanation": "Recommended as the most contextually similar assessment available."
+        })
     return results
